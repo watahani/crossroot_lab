@@ -28,7 +28,7 @@ openssl genrsa -out ./root_ca_2/ca/private/ca.key.pem 2048
 openssl req -reqexts v3_req -new -key ./root_ca_2/ca/private/ca.key.pem -x509 -nodes -days 3650 -out ./root_ca_2/ca/certs/self.ca.crt.pem -subj "/C=JP/ST=Tokyo/L=Shinagawa/O=Contoso/OU=CA/CN=ROOT_CA_2"
 
 # sign root CA2 with root CA1
-openssl req -new -key ./root_ca_2/ca/private/ca.key.pem -out ./root_ca_2/ca/certs/cert.req -subj "/C=JP/ST=Tokyo/L=Shinagawa/O=Contoso/OU=CA/CN=ROOT_CA_2"
+openssl req -new -reqexts v3_req -key ./root_ca_2/ca/private/ca.key.pem -out ./root_ca_2/ca/certs/cert.req -subj "/C=JP/ST=Tokyo/L=Shinagawa/O=Contoso/OU=CA/CN=ROOT_CA_2"
 $env:CRL_URL=$CRL_FOR_ROOT_CA_1
 cd root_ca_1
 openssl ca -batch -extensions v3_ca_with_crl -in ../root_ca_2/ca/certs/cert.req -days 3650 -out ../root_ca_2/ca/certs/ca.crt.pem
@@ -63,6 +63,7 @@ $CertChain | Out-File -Encoding UTF8 -Path ./output/certchain.cer
 $RootCA1Cert | Out-File -Encoding UTF8 -Path ./output/ROOT_CA_1.cer
 $RootCA2Cert = Get-Content .\root_ca_2\ca\certs\self.ca.crt.pem
 $RootCA2Cert | Out-File -Encoding UTF8 -Path ./output/ROOT_CA_2.cer
+$RootCA2CertSignedByRootCA1 | Out-File -Encoding UTF8 -Path ./output/ROOT_CA_2_singed_by_CA1.cer
 
-openssl pkcs12 -export -certpbe PBE-SHA1-3DES -keypbe PBE-SHA1-3DES -nomac -out ./output/server.pfx  -inkey ./intermediate_ca/server.key -in ./output/certchain.cer
+openssl pkcs12 -export -certpbe PBE-SHA1-3DES -keypbe PBE-SHA1-3DES -nomac -out ./output/server.pfx  -inkey ./intermediate_ca/server.key -in ./output/certchain.cer -passout pass:
 
