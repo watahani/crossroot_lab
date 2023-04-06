@@ -19,7 +19,7 @@ flowchart TB
 - PowerShell 5.x
 - Web server that stores the CRL (I use Azure Blob with Force Encryption set to False)
 
-## Create Root two CAs
+## Create Folders
 
 ```powershell
 $configPath = Join-Path -Path $(Get-Location) -ChildPath openssl.cnf
@@ -46,6 +46,8 @@ $CaList | %{
 }
 ```
 
+## Create Root CAs
+
 ```sh
 openssl genrsa -out ./root_ca_1/ca/private/ca.key.pem 2048
 openssl req -reqexts v3_req -new -key ./root_ca_1/ca/private/ca.key.pem -x509 -nodes -days 3650 -out ./root_ca_1/ca/certs/ca.crt.pem -subj "/C=JP/ST=Tokyo/L=Shinagawa/O=Contoso/OU=CA/CN=ROOT_CA_1"
@@ -54,8 +56,7 @@ openssl genrsa -out ./root_ca_2/ca/private/ca.key.pem 2048
 openssl req -reqexts v3_req -new -key ./root_ca_2/ca/private/ca.key.pem -x509 -nodes -days 3650 -out ./root_ca_2/ca/certs/self.ca.crt.pem -subj "/C=JP/ST=Tokyo/L=Shinagawa/O=Contoso/OU=CA/CN=ROOT_CA_2"
 ```
 
-
-## Create Intermediate CA (Same Private Key as ROOT_CA_2)
+## Sign ROOT_CA_2 with ROOT_CA_1 (Cross root)
 
 ```sh
 openssl req -new -key ./root_ca_2/ca/private/ca.key.pem -out ./root_ca_2/ca/certs/cert.req -subj "/C=JP/ST=Tokyo/L=Shinagawa/O=Contoso/OU=CA/CN=ROOT_CA_2"
@@ -87,8 +88,6 @@ cd root_ca_2
 openssl ca -extensions v3_ca_with_crl -in ../intermediate_ca/ca/certs/cert.req -days 3650 -out ../intermediate_ca/ca/certs/ca.crt.pem
 cd ../
 ```
-
-Then root CA2 can behave as intermediate CA.
 
 ## Create Server Certificate
 
