@@ -65,10 +65,25 @@ openssl req -new -key ./root_ca_2/ca/private/ca.key.pem -out ./root_ca_2/ca/cert
 Signed with ROOT_CA_1
 
 ```sh
-$env:CRL_URL="http://cawahaniyacom.blob.core.windows.net/crl/crossrootlab_root_ca_1.crl"
+$env:CRL_URL=$CRL_FOR_ROOT_CA_1
 cd root_ca_1
 openssl ca  -extensions v3_ca_with_crl -in ../root_ca_2/ca/certs/cert.req -days 3650 -out ../root_ca_2/ca/certs/ca.crt.pem
 cd ..
+```
+
+```conf
+[ v3_ca_with_crl ]
+
+# Extensions to add to a certificate request
+
+basicConstraints = CA:TRUE
+keyUsage = critical, cRLSign, keyCertSign
+
+crlDistributionPoints = URI:$ENV::CRL_URL
+
+# PKIX recommendations harmless if included in all certificates.
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer
 ```
 
 Then ROOT_CA_1 ca behave as Intermediate CA.
