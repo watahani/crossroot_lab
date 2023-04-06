@@ -117,19 +117,30 @@ cd ..
 ## Create PFX
 
 ```powershell
+New-Item -Type Directory "output"
+
 $ServerCert = Get-Content .\intermediate_ca\server.cer
 $IntermediateCert = Get-Content .\intermediate_ca\ca\certs\ca.crt.pem
 $RootCA2CertSignedByRootCA1 = Get-Content .\root_ca_2\ca\certs\ca.crt.pem
 $RootCA1Cert = Get-Content .\root_ca_1\ca\certs\ca.crt.pem
 $CertChain = $ServerCert + $IntermediateCert + $RootCA2CertSignedByRootCA1 + $RootCA1Cert
-$CertChain | Out-File -Encoding UTF8 -Path ./certchain.cer
+$CertChain | Out-File -Encoding UTF8 -Path ./output/certchain.cer
 
-$RootCA1Cert | Out-File -Encoding UTF8 -Path ./ROOT_CA_1.cer
-$RootCA2Cert = Get-Content .\root_ca_1\ca\certs\self.ca.crt.pem
-$RootCA2Cert | Out-File -Encoding UTF8 -Path ./ROOT_CA_2.cer
+$RootCA1Cert | Out-File -Encoding UTF8 -Path ./output/ROOT_CA_1.cer
+$RootCA2Cert = Get-Content .\root_ca_2\ca\certs\self.ca.crt.pem
+$RootCA2Cert | Out-File -Encoding UTF8 -Path ./output/ROOT_CA_2.cer
+$RootCA2CertSignedByRootCA1 | Out-File -Encoding UTF8 -Path ./output/ROOT_CA_2_singed_by_CA1.cer
 
 openssl pkcs12 -export -certpbe PBE-SHA1-3DES -keypbe PBE-SHA1-3DES -nomac -out ./server.pfx  -inkey ./intermediate_ca/server.key -in ./certchain.cer -nodes
 ```
+
+Certificates and pxf are saved in output folder.
+
+- ROOT_CA_1.cer: self-signed root ca 1 certificate
+- ROOT_CA_2.cer: self-signed root ca 2 certificate
+- ROOT_CA_2_singed_by_CA1.cer: root ca 2 certificate signed by ca 1
+- certchaing.cer: Full chain certificates (ROOT_CA_1 -> ROOT_CA_2 -> INTERMEDIATE_CA -> SERVER_CERT)
+- server.pfx: Server certificate include private key and full chain certificates
 
 ## Revoke Intermediate Certificate
 

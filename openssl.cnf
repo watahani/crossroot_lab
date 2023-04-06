@@ -229,8 +229,6 @@ authorityKeyIdentifier=keyid,issuer
 
 basicConstraints = CA:TRUE
 keyUsage = nonRepudiation, digitalSignature, keyEncipherment
-subjectKeyIdentifier=hash
-authorityKeyIdentifier=keyid,issuer
 
 [ v3_ca_req ]
 
@@ -277,6 +275,19 @@ keyUsage = critical, cRLSign, keyCertSign
 # Where 'obj' is a standard or added object
 # You can even override a supported extension:
 # basicConstraints= critical, DER:30:03:01:01:FF
+
+[ v3_ca_with_crl ]
+
+# Extensions to add to a certificate request
+
+basicConstraints = CA:TRUE
+keyUsage = critical, cRLSign, keyCertSign
+
+crlDistributionPoints = URI:$ENV::CRL_URL
+
+# PKIX recommendations harmless if included in all certificates.
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer
 
 [ crl_ext ]
 
