@@ -16,8 +16,37 @@ flowchart TB
 ## Requirements
 
 - openssl 3.0.x
-- PowerShell 5.x
+- PowerShell 5.x or 7.x
 - Web server that stores the CRL (I use Azure Blob with Force Encryption set to False)
+
+## Helper function
+
+```powershell
+switch ($PSEdition) {
+    "Desktop" { 
+        Function Out-FileWithUTF8 {
+            param(
+                [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
+                [string]$Content,
+                [Parameter(Mandatory=$true)]
+                [string]$Path
+            )
+            $Content | %{[Text.Encoding]::UTF8.GetBytes($_)} | Set-Content -Encoding Byte -Path $Path
+        }
+     }
+    "Core" {
+        Function Out-FileWithUTF8 {
+            param(
+                [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
+                [string]$Content,
+                [Parameter(Mandatory=$true)]
+                [string]$Path
+            )
+            $Content | Out-File -Encoding utf8 -FilePath $Path -NoNewline
+        }
+    }
+}
+```
 
 ## Create Folders
 
@@ -39,9 +68,9 @@ $CaList | %{ New-Item -Type Directory "$_\ca" }
 $CaList | %{
     cd "$_\ca"
     New-Item -Type Directory "certs", "crl","newcerts","private"
-    Write-Output 0001 | Out-File -encoding UTF8 -PSPath serial -NoNewLine
-    Write-Output "" | Out-File -encoding UTF8 -PSPath index.txt -NoNewLine
-    Write-Output 0001 | Out-File -encoding UTF8 -PSPath crlnumber -NoNewLine
+    "0001" | Out-String | Out-FileWithUTF8 -Path serial
+    New-Item -Type File -Path index.txt
+    "0001" | Out-String | Out-FileWithUTF8 -Path crlnumber
     cd ../../
 }
 ```
@@ -139,12 +168,12 @@ $IntermediateCert = Get-Content .\intermediate_ca\ca\certs\ca.crt.pem
 $RootCA2CertSignedByRootCA1 = Get-Content .\root_ca_2\ca\certs\ca.crt.pem
 $RootCA1Cert = Get-Content .\root_ca_1\ca\certs\ca.crt.pem
 $CertChain = $ServerCert + $IntermediateCert + $RootCA2CertSignedByRootCA1 + $RootCA1Cert
-$CertChain | Out-File -Encoding UTF8 -Path ./output/certchain.cer
+$CertChain | Out-String | Out-FileWithUTF8 -Path ./output/certchain.cer
 
-$RootCA1Cert | Out-File -Encoding UTF8 -Path ./output/ROOT_CA_1.cer
+$RootCA1Cert | Out-String | Out-FileWithUTF8 -Path./output/ROOT_CA_1.cer
 $RootCA2Cert = Get-Content .\root_ca_2\ca\certs\self.ca.crt.pem
-$RootCA2Cert | Out-File -Encoding UTF8 -Path ./output/ROOT_CA_2.cer
-$RootCA2CertSignedByRootCA1 | Out-File -Encoding UTF8 -Path ./output/ROOT_CA_2_singed_by_CA1.cer
+$RootCA2Cert | Out-String | Out-FileWithUTF8 -Path ./output/ROOT_CA_2.cer
+$RootCA2CertSignedByRootCA1 | Out-String | Out-FileWithUTF8 -Path ./output/ROOT_CA_2_singed_by_CA1.cer
 
 openssl pkcs12 -export -certpbe PBE-SHA1-3DES -keypbe PBE-SHA1-3DES -nomac -out ./server.pfx  -inkey ./intermediate_ca/server.key -in ./certchain.cer -nodes
 ```
@@ -169,4 +198,11 @@ cd ..
 cd root_ca_2
 openssl ca -gencrl -crldays 1 -out ../output/crossrootlab_root_ca_2.crl
 cd ..
+```
+
+upload crls
+
+```powershell
+# example using Azure Blob
+azcopy copy ./output/crossrootlab_root_ca_1.crl ""
 ```
